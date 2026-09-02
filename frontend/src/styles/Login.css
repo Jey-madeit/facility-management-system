@@ -10,7 +10,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #002d6d;
+  background: transparent;
   min-width: 100%;
   gap: 1px;
   top: -25px;
