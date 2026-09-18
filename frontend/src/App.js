@@ -9,6 +9,7 @@ import TestRun from './pages/TestRun';
 import BoosterPumps from './pages/BoosterPumps';
 import DailyInspection from './pages/DailyInspection';
 import UserManagement from './pages/UserManagement';
+import Dashboard from './pages/Dashboard';
 import './App.css';
 
 function AppContent() {
@@ -51,6 +52,14 @@ function AppContent() {
         element={
           <ProtectedRoute>
             <DailyInspection />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
           </ProtectedRoute>
         }
       />

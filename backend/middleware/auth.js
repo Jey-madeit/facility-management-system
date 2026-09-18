@@ -8,7 +8,8 @@ if (!JWT_SECRET) {
 }
 
 const authMiddleware = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
 
   if (!token) {
     return res.status(401).json({ message: 'No token provided' });
@@ -24,7 +25,7 @@ const authMiddleware = (req, res, next) => {
 };
 
 const adminMiddleware = (req, res, next) => {
-  if (req.user.role !== 'admin') {
+  if (req.user?.role !== 'admin') {
     return res.status(403).json({ message: 'Admin access required' });
   }
   next();

@@ -1,5 +1,7 @@
 const BoosterPump = require('../models/BoosterPump');
 const { exportBoosterPumpsToExcel, exportBoosterPumpsReportToExcel } = require('../utils/excelExport');
+const { logAudit } = require('../utils/audit');
+const { validateAssetPayload } = require('../utils/validation');
 
 // Get booster pumps
 exports.getBoosterPumps = async (req, res) => {
@@ -36,6 +38,11 @@ exports.createBoosterPump = async (req, res) => {
   try {
     const { startDate, pumpNo, startTime, status, stopDate, stopTime, failureAlarm, totalHours, comments } = req.body;
 
+    const validation = validateAssetPayload({ startDate, stopDate, pumpNo, startTime, status });
+    if (!validation.valid) {
+      return res.status(400).json({ message: validation.errors.join('; ') });
+    }
+
     const pump = new BoosterPump({
       userId: req.user.userId,
       startDate,
@@ -50,6 +57,16 @@ exports.createBoosterPump = async (req, res) => {
     });
 
     await pump.save();
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'created',
+      targetType: 'BoosterPump',
+      targetId: pump._id.toString(),
+      details: { pumpNo: pump.pumpNo || 'N/A', status: pump.status },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
     res.status(201).json(pump);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -80,7 +97,29 @@ exports.updateBoosterPump = async (req, res) => {
     if (totalHours !== undefined) pump.totalHours = totalHours;
     if (comments !== undefined) pump.comments = comments;
 
+    const validation = validateAssetPayload({
+      startDate: pump.startDate,
+      stopDate: pump.stopDate,
+      pumpNo: pump.pumpNo,
+      startTime: pump.startTime,
+      status: pump.status,
+    });
+
+    if (!validation.valid) {
+      return res.status(400).json({ message: validation.errors.join('; ') });
+    }
+
     await pump.save();
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'updated',
+      targetType: 'BoosterPump',
+      targetId: pump._id.toString(),
+      details: { pumpNo: pump.pumpNo || 'N/A', status: pump.status },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
     res.json(pump);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -100,7 +139,18 @@ exports.deleteBoosterPump = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
+    const deletedId = pump._id.toString();
     await BoosterPump.findByIdAndDelete(req.params.id);
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'deleted',
+      targetType: 'BoosterPump',
+      targetId: deletedId,
+      details: { pumpNo: pump.pumpNo || 'N/A', status: pump.status },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
     res.json({ message: 'Booster pump deleted' });
   } catch (error) {
     res.status(500).json({ message: error.message });

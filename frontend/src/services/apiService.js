@@ -9,6 +9,14 @@ export const authService = {
     return apiClient.post('/auth/login', { username, password });
   },
 
+  logout: () => {
+    return apiClient.post('/auth/logout');
+  },
+
+  getCurrentUser: () => {
+    return apiClient.get('/auth/me');
+  },
+
   forgotPassword: (username, otp, newPassword) => {
     return apiClient.post('/auth/forgot-password', { username, otp, newPassword });
   },
@@ -24,6 +32,15 @@ export const authService = {
   verifyOTPAndResetPassword: (username, otp, newPassword, email = '') => {
     return apiClient.post('/auth/verify-otp-and-reset-password', { username, email, otp, newPassword });
   }
+};
+
+export const dashboardService = {
+  getSummary: () => apiClient.get('/dashboard/summary'),
+};
+
+export const auditService = {
+  getAll: (params = {}) => apiClient.get('/audit', { params }),
+  getEntityTrail: (targetType, targetId) => apiClient.get(`/audit/entity/${targetType}/${targetId}`),
 };
 
 export const testRunService = {

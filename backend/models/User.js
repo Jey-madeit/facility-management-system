@@ -22,6 +22,26 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true
     },
+    refreshToken: {
+      type: String,
+      default: null
+    },
+    sessionVersion: {
+      type: Number,
+      default: 0
+    },
+    lastLoginAt: {
+      type: Date,
+      default: null
+    },
+    lastLogoutAt: {
+      type: Date,
+      default: null
+    },
+    lastLoginIp: {
+      type: String,
+      default: null
+    },
     isLocked: {
       type: Boolean,
       default: false

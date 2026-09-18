@@ -1,5 +1,7 @@
 const DailyInspection = require('../models/DailyInspection');
 const { exportDailyInspectionsToExcel, exportDailyInspectionsReportToExcel } = require('../utils/excelExport');
+const { logAudit } = require('../utils/audit');
+const { validateInspectionPayload } = require('../utils/validation');
 
 // Get daily inspections
 exports.getDailyInspections = async (req, res) => {
@@ -36,6 +38,19 @@ exports.submitDailyInspection = async (req, res) => {
   try {
     const { externalAssets, groundFloor, firstFloor, secondFloor, status, inspectionDate, draftId } = req.body;
 
+    const validation = validateInspectionPayload({
+      inspectionDate,
+      status,
+      externalAssets,
+      groundFloor,
+      firstFloor,
+      secondFloor,
+    }, req.user.userId);
+
+    if (!validation.valid) {
+      return res.status(400).json({ message: validation.errors.join('; ') });
+    }
+
     const normalizedStatus = Array.isArray(status)
       ? status.filter((item) => item !== 'Draft')
       : [];
@@ -66,6 +81,16 @@ exports.submitDailyInspection = async (req, res) => {
     }
 
     await inspection.save();
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'submitted',
+      targetType: 'DailyInspection',
+      targetId: inspection._id.toString(),
+      details: { status: inspection.status },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
     res.status(201).json(inspection);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -105,6 +130,19 @@ exports.saveDraftInspection = async (req, res) => {
     if (secondFloor) inspection.secondFloor = secondFloor;
     if (inspectionDate) inspection.inspectionDate = inspectionDate;
 
+    const validation = validateInspectionPayload({
+      inspectionDate: inspection.inspectionDate,
+      status: inspection.status,
+      externalAssets: inspection.externalAssets,
+      groundFloor: inspection.groundFloor,
+      firstFloor: inspection.firstFloor,
+      secondFloor: inspection.secondFloor,
+    }, req.user.userId);
+
+    if (!validation.valid) {
+      return res.status(400).json({ message: validation.errors.join('; ') });
+    }
+
     if (Array.isArray(status) && status.length > 0) {
       const draftStatus = status.filter((item) => item !== 'Draft');
       inspection.status = draftStatus.length > 0 ? [...draftStatus, 'Draft'] : ['Draft'];
@@ -113,6 +151,16 @@ exports.saveDraftInspection = async (req, res) => {
     }
 
     await inspection.save();
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'drafted',
+      targetType: 'DailyInspection',
+      targetId: inspection._id.toString(),
+      details: { status: inspection.status },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
     res.json(inspection);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -132,7 +180,18 @@ exports.deleteDailyInspection = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
+    const deletedId = inspection._id.toString();
     await DailyInspection.findByIdAndDelete(req.params.id);
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'deleted',
+      targetType: 'DailyInspection',
+      targetId: deletedId,
+      details: { status: inspection.status },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
     res.json({ message: 'Daily inspection deleted' });
   } catch (error) {
     res.status(500).json({ message: error.message });

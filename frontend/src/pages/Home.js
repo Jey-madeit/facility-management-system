@@ -80,16 +80,28 @@ const Home = () => {
           </div>
 
           {user?.role === 'admin' && (
-            <div 
-              className="section-card admin-card"
-              onClick={() => navigate('/users')}
-            >
-              <h2>
-                <Users size={20} style={{ marginRight: '8px', marginBottom: '4px', verticalAlign: 'middle' }} />
-                User Management
-              </h2>
-              <p>Manage system users and permissions</p>
-            </div>
+            <>
+              <div 
+                className="section-card admin-card"
+                onClick={() => navigate('/dashboard')}
+              >
+                <h2>
+                  <Users size={20} style={{ marginRight: '8px', marginBottom: '4px', verticalAlign: 'middle' }} />
+                  Operational Dashboard
+                </h2>
+                <p>Review live status summary and recent activity</p>
+              </div>
+              <div 
+                className="section-card admin-card"
+                onClick={() => navigate('/users')}
+              >
+                <h2>
+                  <Users size={20} style={{ marginRight: '8px', marginBottom: '4px', verticalAlign: 'middle' }} />
+                  User Management
+                </h2>
+                <p>Manage system users and permissions</p>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -101,7 +113,10 @@ const Home = () => {
             <button type="button" onClick={() => navigate('/boosterpumps')}>Booster Pumps</button>
             <button type="button" onClick={() => navigate('/dailyinspection')}>Daily Inspection</button>
             {user?.role === 'admin' && (
-              <button type="button" onClick={() => navigate('/users')}>User Management</button>
+              <>
+                <button type="button" onClick={() => navigate('/dashboard')}>Operational Dashboard</button>
+                <button type="button" onClick={() => navigate('/users')}>User Management</button>
+              </>
             )}
           </div>
 

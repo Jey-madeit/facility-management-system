@@ -3,6 +3,12 @@ const router = express.Router();
 const { body } = require('express-validator');
 const authController = require('../controllers/authController');
 
+// Current user
+router.get('/me', authController.getCurrentUser);
+
+// Logout
+router.post('/logout', authController.logout);
+
 // Register route
 router.post(
   '/register',

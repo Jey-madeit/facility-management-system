@@ -1,5 +1,7 @@
 const TestRun = require('../models/TestRun');
 const { exportTestRunsToExcel, exportReportToExcel } = require('../utils/excelExport');
+const { logAudit } = require('../utils/audit');
+const { validateAssetPayload } = require('../utils/validation');
 
 // Get test runs - users see only their own, admins see all
 exports.getTestRuns = async (req, res) => {
@@ -55,6 +57,17 @@ exports.createTestRun = async (req, res) => {
       comments
     } = req.body;
 
+    const assetValidation = validateAssetPayload({
+      generatorSet,
+      status,
+      startDate: testDate,
+      stopDate: testDate,
+    });
+
+    if (!assetValidation.valid) {
+      return res.status(400).json({ message: assetValidation.errors.join('; ') });
+    }
+
     const testRun = new TestRun({
       userId: req.user.userId,
       testDate,
@@ -77,6 +90,16 @@ exports.createTestRun = async (req, res) => {
     });
 
     await testRun.save();
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'created',
+      targetType: 'TestRun',
+      targetId: testRun._id.toString(),
+      details: { generatorSet: testRun.generatorSet || 'N/A', status: testRun.status },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
     res.status(201).json(testRun);
   } catch (error) {
     console.error('Error creating test run:', error);
@@ -136,7 +159,28 @@ exports.updateTestRun = async (req, res) => {
     if (batteryVoltage !== undefined) testRun.batteryVoltage = batteryVoltage;
     if (comments !== undefined) testRun.comments = comments;
 
+    const assetValidation = validateAssetPayload({
+      generatorSet: testRun.generatorSet,
+      status: testRun.status,
+      startDate: testRun.testDate,
+      stopDate: testRun.testDate,
+    });
+
+    if (!assetValidation.valid) {
+      return res.status(400).json({ message: assetValidation.errors.join('; ') });
+    }
+
     await testRun.save();
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'updated',
+      targetType: 'TestRun',
+      targetId: testRun._id.toString(),
+      details: { generatorSet: testRun.generatorSet || 'N/A', status: testRun.status },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
     res.json(testRun);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -157,7 +201,18 @@ exports.deleteTestRun = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
+    const deletedId = testRun._id.toString();
     await TestRun.findByIdAndDelete(req.params.id);
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'deleted',
+      targetType: 'TestRun',
+      targetId: deletedId,
+      details: { generatorSet: testRun.generatorSet || 'N/A', status: testRun.status },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
     res.json({ message: 'Test run deleted' });
   } catch (error) {
     res.status(500).json({ message: error.message });

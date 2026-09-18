@@ -133,18 +133,25 @@ exports.login = async (req, res) => {
 
     // Reset failed attempts on successful login
     user.failedLoginAttempts = 0;
+    user.lastLoginAt = new Date();
+    user.lastLogoutAt = null;
+    user.sessionVersion = (user.sessionVersion || 0) + 1;
     await user.save();
 
     // Create JWT token
     const payload = {
       userId: user._id,
       username: user.username,
-      role: user.role
+      role: user.role,
+      sessionVersion: user.sessionVersion,
     };
 
     const token = jwt.sign(payload, JWT_SECRET, {
       expiresIn: JWT_EXPIRES_IN
     });
+
+    user.refreshToken = token;
+    await user.save();
 
     res.json({
       message: 'Login successful',
@@ -152,9 +159,48 @@ exports.login = async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
-        role: user.role
+        role: user.role,
+        sessionVersion: user.sessionVersion,
       }
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select('-password -otp -otpExpiry');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      user: {
+        id: user._id,
+        username: user.username,
+        role: user.role,
+        email: user.email,
+        sessionVersion: user.sessionVersion,
+        lastLoginAt: user.lastLoginAt,
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.logout = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (user) {
+      user.refreshToken = null;
+      user.lastLogoutAt = new Date();
+      user.sessionVersion = (user.sessionVersion || 0) + 1;
+      await user.save();
+    }
+
+    res.json({ message: 'Logged out successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
