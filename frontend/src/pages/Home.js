@@ -87,7 +87,7 @@ const Home = () => {
               >
                 <h2>
                   <Users size={20} style={{ marginRight: '8px', marginBottom: '4px', verticalAlign: 'middle' }} />
-                  Operational Dashboard
+                  Admin Dashboard
                 </h2>
                 <p>Review live status summary and recent activity</p>
               </div>
