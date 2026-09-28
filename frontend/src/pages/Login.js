@@ -169,7 +169,7 @@ const Login = () => {
             className="back-link landing-back-link"
             onClick={() => navigate('/')}
           >
-            <ArrowLeft size={16} /> Back to Landing
+            <ArrowLeft size={16} /> Back
           </button>
 
           <div className="login-brand">
