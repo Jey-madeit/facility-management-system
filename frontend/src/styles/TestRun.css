@@ -183,6 +183,105 @@
   overflow-x: auto;
 }
 
+.test-run-cards {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.test-run-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e1e6eb;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.test-run-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.test-run-card-header h3,
+.test-run-card h4 {
+  margin: 0;
+  color: #333;
+}
+
+.test-run-card-header p {
+  margin: 5px 0 0;
+  color: #667085;
+}
+
+.test-run-card-header input,
+.test-run-select-all input {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.test-run-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  gap: 12px 18px;
+  margin: 0;
+}
+
+.test-run-details > div {
+  min-width: 0;
+}
+
+.test-run-details dt {
+  margin-bottom: 4px;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.test-run-details dd {
+  margin: 0;
+  color: #212529;
+  overflow-wrap: anywhere;
+}
+
+.test-run-details .test-run-comment {
+  grid-column: 1 / -1;
+}
+
+.test-run-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+}
+
+.test-run-card-actions .delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.test-run-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  color: #555;
+  font-weight: 500;
+}
+
+.import-preview-cards {
+  margin-top: 14px;
+}
+
 table {
   width: 100%;
   
@@ -488,6 +587,15 @@ table input[type="checkbox"] {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  .test-run-card {
+    padding: 14px;
+  }
+
+  .test-run-details {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+    gap: 12px;
+  }
+
   .filter-controls {
     grid-template-columns: 1fr;
   }

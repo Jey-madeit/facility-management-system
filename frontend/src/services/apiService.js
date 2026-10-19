@@ -41,6 +41,8 @@ export const dashboardService = {
 export const auditService = {
   getAll: (params = {}) => apiClient.get('/audit', { params }),
   getEntityTrail: (targetType, targetId) => apiClient.get(`/audit/entity/${targetType}/${targetId}`),
+  getDeleted: (limit = 100) => apiClient.get('/audit/deleted', { params: { limit } }),
+  restoreDeleted: (id) => apiClient.post(`/audit/deleted/${id}/restore`),
 };
 
 export const testRunService = {
@@ -145,6 +147,38 @@ export const dailyInspectionService = {
     document.body.appendChild(link);
     link.click();
     link.parentElement.removeChild(link);
+  }
+};
+
+export const avrRecordingService = {
+  getAll: () => apiClient.get('/avrrecordings'),
+  create: (data) => apiClient.post('/avrrecordings', data),
+  update: (id, data) => apiClient.put(`/avrrecordings/${id}`, data),
+  delete: (id) => apiClient.delete(`/avrrecordings/${id}`),
+  import: (rows, assignedUserId) => apiClient.post('/avrrecordings/import', { rows, assignedUserId }),
+  deleteMultiple: (ids) => apiClient.post('/avrrecordings/delete-multiple', { ids }),
+  generateReport: () => apiClient.get('/avrrecordings/report/generate'),
+  exportToExcel: async () => {
+    const response = await apiClient.get('/avrrecordings/export/excel', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'avr-systems.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+  exportReportToExcel: async () => {
+    const response = await apiClient.get('/avrrecordings/export/report', { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'avr-systems-report.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   }
 };
 

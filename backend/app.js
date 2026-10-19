@@ -56,6 +56,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/testruns', require('./routes/testRun'));
 app.use('/api/boosterpumps', require('./routes/boosterPump'));
 app.use('/api/dailyinspections', require('./routes/dailyInspection'));
+app.use('/api/avrrecordings', require('./routes/avrRecording'));
 app.use('/api/audit', require('./routes/audit'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 

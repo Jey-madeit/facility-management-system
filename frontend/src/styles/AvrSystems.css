@@ -1,0 +1,498 @@
+.avr-recordings-container {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.avr-recordings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.avr-recordings-header h1 {
+  margin: 0 0 6px;
+  color: #263238;
+}
+
+.avr-recordings-header p {
+  margin: 0;
+  color: #5f6b73;
+}
+
+.avr-module-actions,
+.avr-form-actions,
+.avr-import-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+.avr-module-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 12px 24px;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: #fff;
+  font: inherit;
+  font-weight: auto;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.avr-add-button {
+  background: #007bff;
+  border-color: #007bff;
+}
+
+.avr-add-button:hover {
+  background: #0056b3;
+  border-color: #0056b3;
+}
+
+.avr-clear-button {
+  background: #dc3545;
+  border-color: #dc3545;
+}
+
+.avr-clear-button:hover:not(:disabled) {
+  background: #c82333;
+  border-color: #c82333;
+}
+
+.avr-clear-button:disabled {
+  background: #ccc;
+  border-color: #ccc;
+  color: #353838;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.avr-report-button {
+  background: #28a745;
+  border-color: #28a745;
+}
+
+.avr-report-button:hover {
+  background: #218838;
+  border-color: #218838;
+}
+
+.avr-export-button {
+  background: #6dbe45;
+  border-color: #6dbe45;
+}
+
+.avr-export-button:hover {
+  background: #28a745;
+  border-color: #28a745;
+}
+
+.avr-secondary-button,
+.avr-reset-filter-button,
+.avr-bulk-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1px solid #cbd4d8;
+  border-radius: 6px;
+  background: #fff;
+  color: #34454e;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.avr-secondary-button:hover:not(:disabled),
+.avr-reset-filter-button:hover,
+.avr-bulk-actions button:hover:not(:disabled) {
+  border-color: #16734a;
+  color: #16734a;
+}
+
+.avr-secondary-button:disabled,
+.avr-bulk-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.avr-report {
+  margin-bottom: 20px;
+  padding: 20px 24px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.avr-report h2 {
+  margin: 0 0 16px;
+  color: #263238;
+}
+
+.avr-report-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.avr-report-summary div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 180px;
+  padding: 14px;
+  border-radius: 7px;
+  background: #f2f7f4;
+  color: #34454e;
+}
+
+.avr-report-summary span {
+  color: #16734a;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.avr-report-users {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  color: #4c5961;
+}
+
+.avr-recordings-list {
+  margin-top: 18px;
+}
+
+.avr-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.avr-list-heading h2 {
+  margin: 0;
+}
+
+.avr-import-label {
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.avr-import-label span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 10px 16px;
+  border: 1px solid #007bff;
+  border-radius: 6px;
+  background: #007bff;
+  color: #fff;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.avr-import-label:hover span {
+  background: #0056b3;
+  border-color: #0056b3;
+}
+
+.avr-import-label input {
+  display: none;
+}
+
+.avr-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.avr-filters input,
+.avr-filters select,
+.avr-import-actions select {
+  min-height: 39px;
+  padding: 8px 10px;
+  border: 1px solid #ccd3d8;
+  border-radius: 5px;
+  background: #fff;
+  color: #34454e;
+  font: inherit;
+}
+
+.avr-filters input {
+  flex: 1 1 230px;
+}
+
+.avr-results-count {
+  color: #5f6b73;
+  font-size: 13px;
+}
+
+.avr-bulk-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 12px;
+  border-radius: 6px;
+  background: #f3f6f7;
+}
+
+.avr-bulk-actions button:first-of-type {
+  border-color: #c93131;
+  color: #b12828;
+}
+
+.avr-import-message {
+  margin: 12px 0;
+  padding: 11px 13px;
+  border: 1px solid #a8d7ba;
+  border-radius: 6px;
+  background: #effaf3;
+  color: #17643a;
+}
+
+.avr-import-meta {
+  margin: 12px 0;
+  color: #4c5961;
+  font-size: 13px;
+}
+
+.avr-import-preview {
+  margin: 14px 0 20px;
+  padding: 16px;
+  border: 1px solid #dce3e6;
+  border-radius: 8px;
+  background: #fbfcfc;
+}
+
+.avr-import-preview h3 {
+  margin: 0 0 6px;
+  color: #263238;
+}
+
+.avr-import-preview p {
+  color: #5f6b73;
+}
+
+.avr-import-actions {
+  margin: 16px 0 0;
+}
+
+.avr-import-actions label {
+  color: #4c5961;
+  font-weight: 600;
+}
+
+.avr-import-actions .avr-save-button,
+.avr-import-actions .avr-cancel-button {
+  min-height: 39px;
+}
+
+.avr-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #16734a;
+}
+
+.avr-save-button,
+.avr-cancel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.avr-save-button {
+  background: #16734a;
+}
+
+.avr-save-button:hover:not(:disabled) {
+  background: #105d3b;
+}
+
+.avr-cancel-button {
+  background: #64727b;
+}
+
+.avr-form,
+.avr-recordings-list {
+  margin-bottom: 24px;
+  padding: 24px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.avr-form h2,
+.avr-recordings-list h2 {
+  margin: 0 0 20px;
+  color: #263238;
+}
+
+.avr-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0 20px;
+}
+
+.avr-field {
+  min-width: 0;
+  margin-bottom: 20px;
+}
+
+.avr-field-wide {
+  grid-column: 1 / -1;
+}
+
+.avr-field label {
+  display: block;
+  margin-bottom: 8px;
+  color: #555;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.avr-field input,
+.avr-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background: #fff;
+  color: #263238;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.avr-field textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.avr-field input:focus,
+.avr-field textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 5px rgba(102, 126, 234, 0.1);
+}
+
+.avr-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.avr-save-button:disabled,
+.avr-cancel-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.avr-error {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid #e2a4a4;
+  border-radius: 6px;
+  background: #fff1f1;
+  color: #9b2525;
+}
+
+.avr-empty-state {
+  color: #5f6b73;
+}
+
+.avr-table-wrapper {
+  overflow-x: auto;
+}
+
+.avr-table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.avr-table th,
+.avr-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid #e2e7ea;
+  text-align: left;
+  font-size: 13px;
+}
+
+.avr-table th {
+  background: #f3f6f7;
+  color: #46545d;
+  font-weight: 700;
+}
+
+.avr-table tbody tr:hover {
+  background: #f8faf9;
+}
+
+.avr-row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.avr-row-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d5dcdf;
+  border-radius: 5px;
+  background: #fff;
+  color: #33434c;
+  cursor: pointer;
+}
+
+.avr-row-actions button:hover {
+  border-color: #16734a;
+  color: #16734a;
+}
+
+@media (max-width: 600px) {
+  .avr-recordings-container {
+    padding: 16px;
+  }
+
+  .avr-recordings-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .avr-form,
+  .avr-recordings-list {
+    padding: 16px;
+  }
+}

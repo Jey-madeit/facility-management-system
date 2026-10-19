@@ -7,6 +7,8 @@ const SubmitConfirmationModal = ({
   title = 'Submit Confirmation', 
   message = 'Are you sure you want to submit this form?',
   itemName = '',
+  confirmLabel = 'Confirm Submit',
+  loadingLabel = 'Submitting...',
   onConfirm, 
   onCancel, 
   isLoading = false 
@@ -55,11 +57,11 @@ const SubmitConfirmationModal = ({
           >
             {isLoading ? (
               <>
-                <span className="spinner"></span> Submitting...
+                <span className="spinner"></span> {loadingLabel}
               </>
             ) : (
               <>
-                <Send size={16} /> Confirm Submit
+                <Send size={16} /> {confirmLabel}
               </>
             )}
           </button>

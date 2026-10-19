@@ -2,6 +2,7 @@ const DailyInspection = require('../models/DailyInspection');
 const { exportDailyInspectionsToExcel, exportDailyInspectionsReportToExcel } = require('../utils/excelExport');
 const { logAudit } = require('../utils/audit');
 const { validateInspectionPayload } = require('../utils/validation');
+const { isDraftInspection, softDeleteRecords } = require('../utils/softDelete');
 
 // Get daily inspections
 exports.getDailyInspections = async (req, res) => {
@@ -101,7 +102,11 @@ exports.submitDailyInspection = async (req, res) => {
 exports.saveDraftInspection = async (req, res) => {
   try {
     const { id } = req.params;
-    const { externalAssets, groundFloor, firstFloor, secondFloor, status, inspectionDate } = req.body;
+    const { externalAssets, groundFloor, firstFloor, secondFloor, status, inspectionDate, draftStep } = req.body;
+
+    if (draftStep !== undefined && (!Number.isInteger(draftStep) || draftStep < 1 || draftStep > 4)) {
+      return res.status(400).json({ message: 'Draft step must be an integer between 1 and 4' });
+    }
 
     let inspection;
     if (id && id !== 'null') {
@@ -129,6 +134,7 @@ exports.saveDraftInspection = async (req, res) => {
     if (firstFloor) inspection.firstFloor = firstFloor;
     if (secondFloor) inspection.secondFloor = secondFloor;
     if (inspectionDate) inspection.inspectionDate = inspectionDate;
+    if (draftStep !== undefined) inspection.draftStep = draftStep;
 
     const validation = validateInspectionPayload({
       inspectionDate: inspection.inspectionDate,
@@ -180,19 +186,20 @@ exports.deleteDailyInspection = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    const deletedId = inspection._id.toString();
-    await DailyInspection.findByIdAndDelete(req.params.id);
-    await logAudit({
-      actorId: req.user.userId,
-      actorName: req.user.username,
-      action: 'deleted',
+    const { deletedRecords, recoverableCount } = await softDeleteRecords({
+      model: DailyInspection,
       targetType: 'DailyInspection',
-      targetId: deletedId,
-      details: { status: inspection.status },
+      filter: { _id: inspection._id },
+      actor: req.user,
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
+      shouldArchive: (record) => !isDraftInspection(record)
     });
-    res.json({ message: 'Daily inspection deleted' });
+    res.json({
+      message: `Daily inspection deleted; ${recoverableCount} record(s) can be restored for three months`,
+      deletedCount: deletedRecords.length,
+      recoverableCount
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -338,6 +345,17 @@ exports.importDailyInspections = async (req, res) => {
       })
     );
 
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'imported',
+      targetType: 'DailyInspection',
+      targetId: 'bulk',
+      details: { importedCount: createdInspections.length, assignedUserId, bulk: true },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+
     res.status(201).json({
       message: `Successfully imported ${createdInspections.length} daily inspection entries`,
       data: createdInspections
@@ -356,11 +374,21 @@ exports.deleteMultipleDailyInspections = async (req, res) => {
       return res.status(400).json({ message: 'No IDs provided for deletion' });
     }
 
-    const result = await DailyInspection.deleteMany({ _id: { $in: ids } });
+    const { deletedRecords, recoverableCount } = await softDeleteRecords({
+      model: DailyInspection,
+      targetType: 'DailyInspection',
+      filter: { _id: { $in: ids } },
+      actor: req.user,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      bulk: true,
+      shouldArchive: (record) => !isDraftInspection(record)
+    });
 
     res.json({
-      message: `Successfully deleted ${result.deletedCount} daily inspection entries`,
-      deletedCount: result.deletedCount
+      message: `Successfully deleted ${deletedRecords.length} daily inspection entries; ${recoverableCount} can be restored for three months`,
+      deletedCount: deletedRecords.length,
+      recoverableCount
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -2,6 +2,7 @@ const BoosterPump = require('../models/BoosterPump');
 const { exportBoosterPumpsToExcel, exportBoosterPumpsReportToExcel } = require('../utils/excelExport');
 const { logAudit } = require('../utils/audit');
 const { validateAssetPayload } = require('../utils/validation');
+const { softDeleteRecords } = require('../utils/softDelete');
 
 // Get booster pumps
 exports.getBoosterPumps = async (req, res) => {
@@ -139,19 +140,19 @@ exports.deleteBoosterPump = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    const deletedId = pump._id.toString();
-    await BoosterPump.findByIdAndDelete(req.params.id);
-    await logAudit({
-      actorId: req.user.userId,
-      actorName: req.user.username,
-      action: 'deleted',
+    const { deletedRecords, recoverableCount } = await softDeleteRecords({
+      model: BoosterPump,
       targetType: 'BoosterPump',
-      targetId: deletedId,
-      details: { pumpNo: pump.pumpNo || 'N/A', status: pump.status },
+      filter: { _id: pump._id },
+      actor: req.user,
       ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
+      userAgent: req.headers['user-agent']
     });
-    res.json({ message: 'Booster pump deleted' });
+    res.json({
+      message: 'Booster pump moved to the recoverable deleted records log',
+      deletedCount: deletedRecords.length,
+      recoverableCount
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -293,6 +294,19 @@ exports.importBoosterPumps = async (req, res) => {
         }
       }));
 
+      if (createdPumps.length) {
+        await logAudit({
+          actorId: req.user.userId,
+          actorName: req.user.username,
+          action: 'imported',
+          targetType: 'BoosterPump',
+          targetId: 'bulk',
+          details: { importedCount: createdPumps.length, assignedUserId, bulk: true },
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent']
+        });
+      }
+
       const response = { message: `Imported ${createdPumps.length} entries`, data: createdPumps };
       if (errors.length) response.errors = errors;
       res.status(201).json(response);
@@ -310,11 +324,20 @@ exports.deleteMultipleBoosterPumps = async (req, res) => {
       return res.status(400).json({ message: 'No IDs provided for deletion' });
     }
 
-    const result = await BoosterPump.deleteMany({ _id: { $in: ids } });
+    const { deletedRecords, recoverableCount } = await softDeleteRecords({
+      model: BoosterPump,
+      targetType: 'BoosterPump',
+      filter: { _id: { $in: ids } },
+      actor: req.user,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      bulk: true
+    });
 
     res.json({
-      message: `Successfully deleted ${result.deletedCount} booster pump entries`,
-      deletedCount: result.deletedCount
+      message: `Successfully deleted ${deletedRecords.length} booster pump entries; ${recoverableCount} can be restored for three months`,
+      deletedCount: deletedRecords.length,
+      recoverableCount
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

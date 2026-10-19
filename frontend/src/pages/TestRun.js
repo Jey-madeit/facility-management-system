@@ -933,53 +933,31 @@ const TestRun = () => {
           <div className="import-preview">
             <h3>Import Preview</h3>
             <p>Review the data below before adding it to submitted test runs.</p>
-            <div className="table-responsive">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Test Date</th>
-                    <th>Time</th>
-                    <th>Stop Time</th>
-                    <th>Generator Set</th>
-                    <th>Status</th>
-                    <th>Hour Run (HR)</th>
-                    <th>Engine Temperature (°C)</th>
-                    <th>Oil Pressure</th>
-                    <th>L-L Voltage(L-L V)</th>
-                    <th>L-N Voltage (L-N V)</th>
-                    <th>Load Current (A)</th>
-                    <th>Engine Speed (RPM)</th>
-                    <th>Engine Frequency (HZ)</th>
-                    <th>Real Power (KW)</th>
-                    <th>Apparent Power (KVA)</th>
-                    <th>Battery Voltage (VDC)</th>
-                    <th>Comments</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {importPreview.rows.map((row, index) => (
-                    <tr key={index}>
-                      <td>{formatDateForDisplay(row.testDate)}</td>
-                      <td>{formatTimeForDisplay(row.testTime)}</td>
-                      <td>{formatTimeForDisplay(row.stopTime)}</td>
-                      <td>{row.generatorSet}</td>
-                      <td><span className={`status ${row.status}`}>{row.status}</span></td>
-                      <td>{row.hourRun}</td>
-                      <td>{row.engineTemperature}</td>
-                      <td>{row.oilPressure}</td>
-                      <td>{row.llVoltage}</td>
-                      <td>{row.lnVoltage}</td>
-                      <td>{row.loadCurrent}</td>
-                      <td>{row.engineSpeed}</td>
-                      <td>{row.engineFrequency}</td>
-                      <td>{row.realPower}</td>
-                      <td>{row.apparentPower}</td>
-                      <td>{row.batteryVoltage}</td>
-                      <td>{row.comments || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="test-run-cards import-preview-cards">
+              {importPreview.rows.map((row, index) => (
+                <article className="test-run-card" key={index}>
+                  <h4>Import Row {index + 1}</h4>
+                  <dl className="test-run-details">
+                    <div><dt>Test Date</dt><dd>{formatDateForDisplay(row.testDate)}</dd></div>
+                    <div><dt>Start Time</dt><dd>{formatTimeForDisplay(row.testTime)}</dd></div>
+                    <div><dt>Stop Time</dt><dd>{formatTimeForDisplay(row.stopTime)}</dd></div>
+                    <div><dt>Generator Set</dt><dd>{row.generatorSet || '-'}</dd></div>
+                    <div><dt>Status</dt><dd><span className={`status ${row.status}`}>{row.status || '-'}</span></dd></div>
+                    <div><dt>Hour Run (HR)</dt><dd>{row.hourRun ?? '-'}</dd></div>
+                    <div><dt>Engine Temperature (°C)</dt><dd>{row.engineTemperature ?? '-'}</dd></div>
+                    <div><dt>Oil Pressure</dt><dd>{row.oilPressure ?? '-'}</dd></div>
+                    <div><dt>L-L Voltage (L-L V)</dt><dd>{row.llVoltage ?? '-'}</dd></div>
+                    <div><dt>L-N Voltage (L-N V)</dt><dd>{row.lnVoltage ?? '-'}</dd></div>
+                    <div><dt>Load Current (A)</dt><dd>{row.loadCurrent ?? '-'}</dd></div>
+                    <div><dt>Engine Speed (RPM)</dt><dd>{row.engineSpeed ?? '-'}</dd></div>
+                    <div><dt>Engine Frequency (HZ)</dt><dd>{row.engineFrequency ?? '-'}</dd></div>
+                    <div><dt>Real Power (KW)</dt><dd>{row.realPower ?? '-'}</dd></div>
+                    <div><dt>Apparent Power (KVA)</dt><dd>{row.apparentPower ?? '-'}</dd></div>
+                    <div><dt>Battery Voltage (VDC)</dt><dd>{row.batteryVoltage ?? '-'}</dd></div>
+                    <div className="test-run-comment"><dt>Comments</dt><dd>{row.comments || '-'}</dd></div>
+                  </dl>
+                </article>
+              ))}
             </div>
             <div className="import-actions">
               {user?.role === 'admin' && (
@@ -1028,105 +1006,78 @@ const TestRun = () => {
         ) : getFilteredTestRuns().length === 0 ? (
           <p>{testRuns.length === 0 ? 'No test runs submitted yet' : 'No test runs match your filters'}</p>
         ) : (
-          <div className="table-responsive">
-            <table>
-              <thead>
-                <tr>
+          <>
+            {user?.role === 'admin' && (
+              <label className="test-run-select-all">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size === getFilteredTestRuns().length && getFilteredTestRuns().length > 0}
+                  onChange={selectAll}
+                />
+                Select all filtered test runs
+              </label>
+            )}
+            <div className="test-run-cards">
+              {getFilteredTestRuns().map((testRun, index) => (
+              <article className="test-run-card" key={testRun._id}>
+                <div className="test-run-card-header">
+                  <div>
+                    <h3>Test Run #{index + 1}</h3>
+                    <p>{testRun.generatorSet || 'Generator Set not specified'}</p>
+                  </div>
                   {user?.role === 'admin' && (
-                    <th>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.size === getFilteredTestRuns().length && getFilteredTestRuns().length > 0}
-                        onChange={selectAll}
-                        title="Select all"
-                      />
-                    </th>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(testRun._id)}
+                      onChange={() => toggleSelectId(testRun._id)}
+                      aria-label={`Select test run ${index + 1}`}
+                    />
                   )}
-                  <th>#</th>
-                  <th>Test_Date</th>
-                  <th>Start_Time</th>
-                  <th>Stop_Time</th>
-                  <th>Generator Set</th>
-                  <th>Status</th>
-                  <th>Hour_Run (HR)</th>
-                  <th>Engine Temperature (&deg;C)</th>
-                  <th>Oil Pressure</th>
-                  <th>L-L Voltage(LLV)</th>
-                  <th>L-N Voltage (LN V)</th>
-                  <th>Load Current (A)</th>
-                  <th>Engine Speed (RPM)</th>
-                  <th>Engine Frequency (HZ)</th>
-                  <th>Real Power (KW)</th>
-                  <th>Apparent Power (KVA)</th>
-                  <th>Battery Voltage (VDC)</th>
-                  <th>Comments</th>
-                  {user?.role === 'admin' && <th>Imported Date</th>}
-                  {user?.role === 'admin' && <th>User</th>}
-                  {user?.role === 'admin' && <th>Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {getFilteredTestRuns().map((testRun, index) => (
-                  <tr key={testRun._id}>
-                    {user?.role === 'admin' && (
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(testRun._id)}
-                          onChange={() => toggleSelectId(testRun._id)}
-                          />
-                      </td>
-                    )}
-                    <td>{index + 1}</td>
-                    <td>{testRun.testDate ? formatDateForDisplay(testRun.testDate) || formatDateForDisplay(new Date()) : formatDateForDisplay(new Date())}</td>
-                    <td>{formatTimeForDisplay(testRun.testTime)}</td>
-                    <td>{formatTimeForDisplay(testRun.stopTime)}</td>
-                    <td>{testRun.generatorSet}</td>
-                    <td><span className={`status ${testRun.status}`}>{testRun.status}</span></td>
-                    <td>{testRun.hourRun}</td>
-                    <td>{testRun.engineTemperature}</td>
-                    <td>{testRun.oilPressure}</td>
-                    <td>{testRun.llVoltage}</td>
-                    <td>{testRun.lnVoltage}</td>
-                    <td>{testRun.loadCurrent}</td>
-                    <td>{testRun.engineSpeed}</td>
-                    <td>{testRun.engineFrequency}</td>
-                    <td>{testRun.realPower}</td>
-                    <td>{testRun.apparentPower}</td>
-                    <td>{testRun.batteryVoltage}</td>
-                    <td>{testRun.comments || '-'}</td>
-                    { user?.role ==='admin' && (
-                    <td>
-                      {
-                        testRun.importedDate ? new Date(testRun.importedDate).toLocaleDateString('en-US', 
-                          {
-                            day: '2-digit', 
-                            month: 'short', 
-                            year: 'numeric'
-                          }
-                        ) : '-'
-                      }
-                    </td>)}
-                    {user?.role === 'admin' && 
-                    <td style={{textTransform: 'capitalize'}}>
-                      {testRun.userId?.username}
-                    </td>}
-                    {user?.role === 'admin' && (
-                    <td>
-                      <button 
-                        onClick={() => handleDelete(testRun._id, `${testRun.generatorSet} - ${new Date(testRun.createdAt).toLocaleDateString()}`)}
-                        className="delete-btn"
-                        title="Delete this test run"
-                      >
-                        Delete <Trash2 size={16} /> 
-                      </button>
-                    </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </div>
+                <dl className="test-run-details">
+                  <div><dt>Test Date</dt><dd>{testRun.testDate ? formatDateForDisplay(testRun.testDate) || formatDateForDisplay(new Date()) : formatDateForDisplay(new Date())}</dd></div>
+                  <div><dt>Start Time</dt><dd>{formatTimeForDisplay(testRun.testTime)}</dd></div>
+                  <div><dt>Stop Time</dt><dd>{formatTimeForDisplay(testRun.stopTime)}</dd></div>
+                  <div><dt>Generator Set</dt><dd>{testRun.generatorSet || '-'}</dd></div>
+                  <div><dt>Status</dt><dd><span className={`status ${testRun.status}`}>{testRun.status || '-'}</span></dd></div>
+                  <div><dt>Hour Run (HR)</dt><dd>{testRun.hourRun ?? '-'}</dd></div>
+                  <div><dt>Engine Temperature (°C)</dt><dd>{testRun.engineTemperature ?? '-'}</dd></div>
+                  <div><dt>Oil Pressure</dt><dd>{testRun.oilPressure ?? '-'}</dd></div>
+                  <div><dt>L-L Voltage (LLV)</dt><dd>{testRun.llVoltage ?? '-'}</dd></div>
+                  <div><dt>L-N Voltage (LN V)</dt><dd>{testRun.lnVoltage ?? '-'}</dd></div>
+                  <div><dt>Load Current (A)</dt><dd>{testRun.loadCurrent ?? '-'}</dd></div>
+                  <div><dt>Engine Speed (RPM)</dt><dd>{testRun.engineSpeed ?? '-'}</dd></div>
+                  <div><dt>Engine Frequency (HZ)</dt><dd>{testRun.engineFrequency ?? '-'}</dd></div>
+                  <div><dt>Real Power (KW)</dt><dd>{testRun.realPower ?? '-'}</dd></div>
+                  <div><dt>Apparent Power (KVA)</dt><dd>{testRun.apparentPower ?? '-'}</dd></div>
+                  <div><dt>Battery Voltage (VDC)</dt><dd>{testRun.batteryVoltage ?? '-'}</dd></div>
+                  <div className="test-run-comment"><dt>Comments</dt><dd>{testRun.comments || '-'}</dd></div>
+                  {user?.role === 'admin' && (
+                    <>
+                      <div><dt>Imported Date</dt><dd>{testRun.importedDate ? new Date(testRun.importedDate).toLocaleDateString('en-US', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      }) : '-'}</dd></div>
+                      <div><dt>User</dt><dd className="test-run-user">{testRun.userId?.username || '-'}</dd></div>
+                    </>
+                  )}
+                </dl>
+                {user?.role === 'admin' && (
+                  <div className="test-run-card-actions">
+                    <button
+                      onClick={() => handleDelete(testRun._id, `${testRun.generatorSet} - ${new Date(testRun.createdAt).toLocaleDateString()}`)}
+                      className="delete-btn"
+                      title="Delete this test run"
+                    >
+                      Delete <Trash2 size={16} />
+                    </button>
+                  </div>
+                )}
+              </article>
+              ))}
+            </div>
+          </>
         )}
       </div>)}
 

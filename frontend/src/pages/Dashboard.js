@@ -1,29 +1,78 @@
-import React, { useEffect, useState } from 'react';
-import { Users, Shield, UserCheck, Activity } from 'lucide-react';
-import { dashboardService } from '../services/apiService';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Users, Shield, UserCheck, Activity, RotateCcw } from 'lucide-react';
+import { auditService, dashboardService } from '../services/apiService';
 import NavBar from '../components/NavBar';
 import '../styles/Dashboard.css';
 
 const Dashboard = () => {
   const [summary, setSummary] = useState(null);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [deletedRecords, setDeletedRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [auditError, setAuditError] = useState('');
+  const [deletedRecordsError, setDeletedRecordsError] = useState('');
+  const [restoreError, setRestoreError] = useState('');
+  const [restoreMessage, setRestoreMessage] = useState('');
+  const [restoringId, setRestoringId] = useState('');
+
+  const loadDashboardData = useCallback(async () => {
+    const [summaryResult, auditResult, deletedResult] = await Promise.allSettled([
+      dashboardService.getSummary(),
+      auditService.getAll({ limit: 100 }),
+      auditService.getDeleted(100)
+    ]);
+
+    if (summaryResult.status === 'fulfilled') {
+      setSummary(summaryResult.value.data);
+      setError('');
+    } else {
+      setError(summaryResult.reason.response?.data?.message || 'Failed to load dashboard summary.');
+    }
+
+    if (auditResult.status === 'fulfilled' && deletedResult.status === 'fulfilled') {
+      setAuditLogs(auditResult.value.data.logs || []);
+      setDeletedRecords(deletedResult.value.data.records || []);
+      setAuditError('');
+      setDeletedRecordsError('');
+    } else {
+      if (auditResult.status === 'fulfilled') {
+        setAuditLogs(auditResult.value.data.logs || []);
+        setAuditError('');
+      } else {
+        setAuditError(auditResult.reason.response?.data?.message || 'Unable to load audit activity.');
+      }
+      if (deletedResult.status === 'fulfilled') {
+        setDeletedRecords(deletedResult.value.data.records || []);
+        setDeletedRecordsError('');
+      } else {
+        setDeletedRecordsError(deletedResult.reason.response?.data?.message || 'Unable to load deleted records.');
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchSummary = async () => {
-      try {
-        setLoading(true);
-        const response = await dashboardService.getSummary();
-        setSummary(response.data);
-      } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load dashboard summary');
-      } finally {
-        setLoading(false);
-      }
+    const fetchDashboard = async () => {
+      await loadDashboardData();
+      setLoading(false);
     };
+    fetchDashboard();
+  }, [loadDashboardData]);
 
-    fetchSummary();
-  }, []);
+  const handleRestore = async (id) => {
+    try {
+      setRestoringId(id);
+      setRestoreError('');
+      setRestoreMessage('');
+      const response = await auditService.restoreDeleted(id);
+      setRestoreMessage(response.data.message);
+      await loadDashboardData();
+    } catch (restoreRequestError) {
+      setRestoreError(restoreRequestError.response?.data?.message || 'Unable to restore this record.');
+    } finally {
+      setRestoringId('');
+    }
+  };
 
   if (loading) {
     return (
@@ -62,6 +111,15 @@ const Dashboard = () => {
             <StatusPanel title="Pump Status" data={summary?.pumpStatusCounts || {}} />
             <StatusPanel title="Inspection Status" data={summary?.inspectionStatusCounts || {}} />
             <UserPanel users={summary?.recentUsers || []} />
+            <AuditActivityPanel logs={auditLogs} error={auditError} />
+            <DeletedRecordsPanel
+              records={deletedRecords}
+              error={deletedRecordsError}
+              restoreError={restoreError}
+              restoreMessage={restoreMessage}
+              restoringId={restoringId}
+              onRestore={handleRestore}
+            />
           </div>
         </div>
       </div>
@@ -295,6 +353,94 @@ const UserPanel = ({ users }) => (
               <span className="user-role">{user.role}</span>
             </div>
             <span className="user-tag">active</span>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+);
+
+const targetLabels = {
+  TestRun: 'Generator Test Run',
+  BoosterPump: 'Booster Pump',
+  DailyInspection: 'Daily Inspection',
+  AvrRecording: 'AVR System'
+};
+
+const formatDateTime = (value) => {
+  if (!value) return 'Unknown time';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+};
+
+const AuditActivityPanel = ({ logs, error }) => (
+  <div className="panel-card audit-panel">
+    <div className="panel-header">
+      <h2>Recent Audit Activity</h2>
+    </div>
+    {error && <div className="alert alert-error">{error}</div>}
+    {!error && logs.length === 0 ? (
+      <div className="empty-state">No audit activity recorded yet.</div>
+    ) : (
+      <ul className="audit-list">
+        {logs.map((log) => (
+          <li className="audit-item" key={log._id}>
+            <div className="audit-item-heading">
+              <strong>{log.actorName || 'Unknown user'}</strong>
+              <time dateTime={log.createdAt}>{formatDateTime(log.createdAt)}</time>
+            </div>
+            <p>
+              <span className={`audit-action action-${String(log.action).toLowerCase()}`}>{log.action}</span>
+              {' '}{targetLabels[log.targetType] || log.targetType}
+              {log.details?.bulk ? ' (bulk action)' : ''}
+            </p>
+            {log.targetId && <small>Record ID: {log.targetId}</small>}
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+);
+
+const DeletedRecordsPanel = ({
+  records,
+  error,
+  restoreError,
+  restoreMessage,
+  restoringId,
+  onRestore
+}) => (
+  <div className="panel-card deleted-records-panel">
+    <div className="panel-header">
+      <h2>Recoverable Deleted Records</h2>
+      <p>Records are permanently removed after three months unless restored.</p>
+    </div>
+    {error && <div className="alert alert-error">{error}</div>}
+    {restoreError && <div className="alert alert-error">{restoreError}</div>}
+    {restoreMessage && <div className="alert alert-success" role="status">{restoreMessage}</div>}
+    {!error && records.length === 0 ? (
+      <div className="empty-state">No recoverable deleted records.</div>
+    ) : (
+      <ul className="deleted-record-list">
+        {records.map((record) => (
+          <li className="deleted-record-item" key={record._id}>
+            <div className="deleted-record-info">
+              <strong>{record.targetLabel}</strong>
+              <span>{Object.values(record.summary || {}).filter(Boolean).join(' · ') || 'Record details unavailable'}</span>
+              <small>
+                Deleted by {record.deletedByName || 'Unknown user'} on {formatDateTime(record.deletedAt)}
+              </small>
+              <small>Recover by {formatDateTime(record.expiresAt)}</small>
+            </div>
+            <button
+              type="button"
+              className="restore-record-button"
+              onClick={() => onRestore(record._id)}
+              disabled={Boolean(restoringId)}
+            >
+              <RotateCcw size={15} />
+              {restoringId === record._id ? 'Restoring…' : 'Restore'}
+            </button>
           </li>
         ))}
       </ul>

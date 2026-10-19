@@ -19,15 +19,15 @@ const Landing = () => {
                     <p>
                       Our centralized platform simplifies facility management by providing a secure, 
                       modern workspace to log generator tests, record booster pumps 
-                      and input inspection data.
+                      and input facility inspection data.
                     </p>
                     <div className="landing-actions">
                         <button className="landing-button primary" onClick={() => navigate('/login')}>
                          Get Started
                         </button>
-                        <button className="landing-button secondary" onClick={() => navigate('/login')}>
+                        {/*<button className="landing-button secondary" onClick={() => navigate('/login')}>
                          Login
-                        </button>
+                        </button>*/}
                     </div>
                 </div>
 

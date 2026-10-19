@@ -2,6 +2,7 @@ const TestRun = require('../models/TestRun');
 const { exportTestRunsToExcel, exportReportToExcel } = require('../utils/excelExport');
 const { logAudit } = require('../utils/audit');
 const { validateAssetPayload } = require('../utils/validation');
+const { softDeleteRecords } = require('../utils/softDelete');
 
 // Get test runs - users see only their own, admins see all
 exports.getTestRuns = async (req, res) => {
@@ -201,19 +202,19 @@ exports.deleteTestRun = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    const deletedId = testRun._id.toString();
-    await TestRun.findByIdAndDelete(req.params.id);
-    await logAudit({
-      actorId: req.user.userId,
-      actorName: req.user.username,
-      action: 'deleted',
+    const { deletedRecords, recoverableCount } = await softDeleteRecords({
+      model: TestRun,
       targetType: 'TestRun',
-      targetId: deletedId,
-      details: { generatorSet: testRun.generatorSet || 'N/A', status: testRun.status },
+      filter: { _id: testRun._id },
+      actor: req.user,
       ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
+      userAgent: req.headers['user-agent']
     });
-    res.json({ message: 'Test run deleted' });
+    res.json({
+      message: 'Test run moved to the recoverable deleted records log',
+      deletedCount: deletedRecords.length,
+      recoverableCount
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -335,6 +336,17 @@ exports.importTestRuns = async (req, res) => {
       )
     );
 
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'imported',
+      targetType: 'TestRun',
+      targetId: 'bulk',
+      details: { importedCount: createdTestRuns.length, assignedUserId, bulk: true },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+
     res.status(201).json({
       message: `Successfully imported ${createdTestRuns.length} test run entries`,
       data: createdTestRuns
@@ -353,11 +365,20 @@ exports.deleteMultipleTestRuns = async (req, res) => {
       return res.status(400).json({ message: 'No IDs provided for deletion' });
     }
 
-    const result = await TestRun.deleteMany({ _id: { $in: ids } });
+    const { deletedRecords, recoverableCount } = await softDeleteRecords({
+      model: TestRun,
+      targetType: 'TestRun',
+      filter: { _id: { $in: ids } },
+      actor: req.user,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      bulk: true
+    });
 
     res.json({
-      message: `Successfully deleted ${result.deletedCount} test run entries`,
-      deletedCount: result.deletedCount
+      message: `Successfully deleted ${deletedRecords.length} test run entries; ${recoverableCount} can be restored for three months`,
+      deletedCount: deletedRecords.length,
+      recoverableCount
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

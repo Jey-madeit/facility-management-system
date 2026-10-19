@@ -11,6 +11,11 @@ const dailyInspectionSchema = new mongoose.Schema(
       type: Date,
       default: Date.now
     },
+    draftStep: {
+      type: Number,
+      min: 1,
+      max: 4
+    },
     // External Assets
     externalAssets: {
       cumminsGeneratorAvailability: {

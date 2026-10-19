@@ -78,6 +78,17 @@ const Home = () => {
             <p>Multi-floor inspection forms</p>
             <p>External Assets, Ground, First and Second Floor</p>
           </div>
+          
+          <div
+            className="section-card"
+            onClick={() => navigate('/avrsystems')}
+          >
+            <h2>
+              <Building2 size={20} style={{ marginRight: '8px', marginBottom: '4px', verticalAlign: 'middle' }} /> 
+              AVR Systems
+            </h2>
+            <p>Enter, view, and manage AVR system data</p>
+          </div>
 
           {user?.role === 'admin' && (
             <>
@@ -112,9 +123,10 @@ const Home = () => {
             <button type="button" onClick={() => navigate('/testrun')}>Generator Test Run</button>
             <button type="button" onClick={() => navigate('/boosterpumps')}>Booster Pumps</button>
             <button type="button" onClick={() => navigate('/dailyinspection')}>Daily Inspection</button>
+            <button type="button" onClick={() => navigate('/avrsystems')}>AVR Systems</button>
             {user?.role === 'admin' && (
               <>
-                <button type="button" onClick={() => navigate('/dashboard')}>Operational Dashboard</button>
+                {/*<button type="button" onClick={() => navigate('/dashboard')}>Operational Dashboard</button>*/}
                 <button type="button" onClick={() => navigate('/users')}>User Management</button>
               </>
             )}

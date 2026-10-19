@@ -2,6 +2,7 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const { sendOTPEmail } = require('../utils/emailService');
+const { logAudit } = require('../utils/audit');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h';
@@ -66,6 +67,16 @@ exports.register = async (req, res) => {
     });
 
     await user.save();
+    await logAudit({
+      actorId: user._id,
+      actorName: user.username,
+      action: 'registered',
+      targetType: 'User',
+      targetId: user._id.toString(),
+      details: { role: user.role },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
 
     // Create JWT token
     const payload = {
@@ -105,11 +116,30 @@ exports.login = async (req, res) => {
     // Check if user exists
     const user = await User.findOne({ username });
     if (!user) {
+      await logAudit({
+        actorName: 'Unverified user',
+        action: 'login_failed',
+        targetType: 'User',
+        targetId: String(username || 'unknown'),
+        details: { reason: 'unknown_username' },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
       return res.status(400).json({ message: 'Invalid username or password' });
     }
 
     // Check if account is locked
     if (user.isLocked) {
+      await logAudit({
+        actorId: user._id,
+        actorName: user.username,
+        action: 'login_failed',
+        targetType: 'User',
+        targetId: user._id.toString(),
+        details: { reason: 'account_locked' },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
       return res.status(403).json({ message: 'Account is locked. Contact your administrator.' });
     }
 
@@ -123,10 +153,30 @@ exports.login = async (req, res) => {
       if (user.failedLoginAttempts >= 3) {
         user.isLocked = true;
         await user.save();
+        await logAudit({
+          actorId: user._id,
+          actorName: user.username,
+          action: 'login_failed',
+          targetType: 'User',
+          targetId: user._id.toString(),
+          details: { reason: 'account_locked_after_failed_attempts' },
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent']
+        });
         return res.status(403).json({ message: 'Account locked due to too many failed login attempts. Contact your administrator.' });
       }
 
       await user.save();
+      await logAudit({
+        actorId: user._id,
+        actorName: user.username,
+        action: 'login_failed',
+        targetType: 'User',
+        targetId: user._id.toString(),
+        details: { reason: 'invalid_password', attemptsRemaining: 3 - user.failedLoginAttempts },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
       const remaining = 3 - user.failedLoginAttempts;
       return res.status(400).json({ message: `Invalid username or password. ${remaining} attempt(s) remaining before account is locked.` });
     }
@@ -152,6 +202,16 @@ exports.login = async (req, res) => {
 
     user.refreshToken = token;
     await user.save();
+    await logAudit({
+      actorId: user._id,
+      actorName: user.username,
+      action: 'login',
+      targetType: 'User',
+      targetId: user._id.toString(),
+      details: { role: user.role },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
 
     res.json({
       message: 'Login successful',
@@ -199,6 +259,15 @@ exports.logout = async (req, res) => {
       user.sessionVersion = (user.sessionVersion || 0) + 1;
       await user.save();
     }
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'logout',
+      targetType: 'User',
+      targetId: req.user.userId,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
 
     res.json({ message: 'Logged out successfully' });
   } catch (error) {

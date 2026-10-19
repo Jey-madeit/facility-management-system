@@ -103,6 +103,82 @@ const exportBoosterPumpsToExcel = (pumps) => {
   return createExcelBuffer(data, 'Booster Pumps', headers);
 };
 
+const avrRecordingHeaders = [
+  'DATE',
+  'TIME',
+  'INPUT VOLTAGE L-L (V)',
+  'OUTPUT VOLTAGE L-L (V)',
+  'INPUT VOLTAGE L-N (V)',
+  'OUTPUT VOLTAGE L-N (V)',
+  'INPUT LOAD CURRENT (A)',
+  'OUTPUT LOAD CURRENT (A)',
+  'NEUTRAL (N)',
+  'FREQUENCY',
+  'INPUT - KILOWATT  (KW)',
+  'OUTPUT - KILOWATT  (KW)',
+  'INPUT-KILOVOLT AMPERE( KVA)',
+  'OUTPUT - KILOVOLT AMPERE (KVA)',
+  'INPUT POWER FACTOR (PF)',
+  'OUTPUT POWER FACTOR (PF)',
+  'INPUT KWh',
+  'OUTPUT KWh',
+  'INPUT KWh/24HRS',
+  'OUTPUT KWh/24HRS',
+  'ANY ALARM',
+  'COMMENTS'
+];
+
+const avrRecordingRow = (recording) => [
+  recording.date ? new Date(recording.date).toLocaleDateString('en-GB') : '',
+  recording.time || '',
+  recording.inputVoltageLL ?? '',
+  recording.outputVoltageLL ?? '',
+  recording.inputVoltageLN ?? '',
+  recording.outputVoltageLN ?? '',
+  recording.inputLoadCurrent ?? '',
+  recording.outputLoadCurrent ?? '',
+  recording.neutralN ?? '',
+  recording.frequency ?? '',
+  recording.inputKilowatt ?? '',
+  recording.outputKilowatt ?? '',
+  recording.inputKilovoltAmpere ?? '',
+  recording.outputKilovoltAmpere ?? '',
+  recording.inputPowerFactor ?? recording.inputPF ?? '',
+  recording.outputPowerFactor ?? recording.outputPF ?? '',
+  recording.inputKWh ?? recording.inputKwh ?? '',
+  recording.outputKWh ?? recording.outputKwh ?? '',
+  recording.inputkwh24Hrs ?? recording.kwh24Hrs ?? '',
+  recording.outputkwh24Hrs ?? recording.outputKwhDay ?? '',
+  recording.anyAlarm || '',
+  recording.comments || ''
+];
+
+const exportAvrRecordingsToExcel = (recordings) => {
+  const rows = Array.isArray(recordings) ? recordings.map(avrRecordingRow) : [];
+  return createExcelBuffer(rows, 'AVR Recordings', avrRecordingHeaders);
+};
+
+const exportAvrRecordingsReportToExcel = (recordings) => {
+  const wb = XLSX.utils.book_new();
+  const rows = Array.isArray(recordings) ? recordings : [];
+  const alarmCount = rows.filter((recording) => {
+    const alarm = String(recording.anyAlarm || '').trim().toLowerCase();
+    return alarm && !['none', 'no', 'n/a', '-'].includes(alarm);
+  }).length;
+  const summary = [
+    ['AVR Recordings Report'],
+    ['Total Recordings', rows.length],
+    ['Recordings With Alarm', alarmCount]
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summary), 'Summary');
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet([avrRecordingHeaders, ...rows.map(avrRecordingRow)]),
+    'AVR Recordings'
+  );
+  return XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
+};
+
 const exportDailyInspectionsToExcel = (inspections) => {
   // Ensure inspections is an array
   if (!Array.isArray(inspections)) {
@@ -532,6 +608,8 @@ const exportDailyInspectionsReportToExcel = (report) => {
 module.exports = {
   exportTestRunsToExcel,
   exportBoosterPumpsToExcel,
+  exportAvrRecordingsToExcel,
+  exportAvrRecordingsReportToExcel,
   exportDailyInspectionsToExcel,
   exportReportToExcel,
   exportBoosterPumpsReportToExcel,

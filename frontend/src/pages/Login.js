@@ -190,7 +190,7 @@ const Login = () => {
                 <User size={16} style={{marginRight: '0', marginBottom: '4px',
                   verticalAlign: 'middle', horizontalAlign: 'middle'
                 }} />
-                User Login
+                Staff
               </button>
               <button
                 type="button"
@@ -200,7 +200,7 @@ const Login = () => {
                 <Shield size={16} style={{marginRight: '0', marginBottom: '3px',
                   verticalAlign: 'middle', horizontalAlign: 'middle'
                 }} />
-                Admin Login
+                Admin
               </button>
             </div>
           )}

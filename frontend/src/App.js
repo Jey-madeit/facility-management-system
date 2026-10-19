@@ -10,6 +10,7 @@ import BoosterPumps from './pages/BoosterPumps';
 import DailyInspection from './pages/DailyInspection';
 import UserManagement from './pages/UserManagement';
 import Dashboard from './pages/Dashboard';
+import AvrSystems from './pages/AvrSystems';
 import './App.css';
 
 function AppContent() {
@@ -55,6 +56,15 @@ function AppContent() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/avrsystems"
+        element={
+          <ProtectedRoute>
+            <AvrSystems />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/avrrecordings" element={<Navigate to="/avrsystems" replace />} />
       <Route
         path="/dashboard"
         element={

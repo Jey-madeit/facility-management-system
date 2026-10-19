@@ -120,6 +120,8 @@ const DailyInspection = () => {
   });
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null, name: '' });
   const [submitModal, setSubmitModal] = useState(false);
+  const [saveDraftModal, setSaveDraftModal] = useState(false);
+  const [shouldFocusDraftInput, setShouldFocusDraftInput] = useState(false);
   const [clearFormModal, setClearFormModal] = useState(false);
   const [cancelModal, setCancelModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -141,6 +143,23 @@ const DailyInspection = () => {
       fetchUsers();
     }
   }, [user?.role]);
+
+  useEffect(() => {
+    if (!showForm || !shouldFocusDraftInput) return undefined;
+
+    const frame = window.requestAnimationFrame(() => {
+      const form = document.getElementById('daily-inspection-form');
+      const fields = Array.from(form?.querySelectorAll('input:not([type="checkbox"]), textarea, select') || []);
+      const target = fields.find((field) => !field.value) || fields[0];
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.focus({ preventScroll: true });
+      }
+      setShouldFocusDraftInput(false);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [showForm, shouldFocusDraftInput, currentStep]);
 
   const fetchInspections = async () => {
     try {
@@ -181,7 +200,7 @@ const DailyInspection = () => {
     if (currentStep < 4) {
       // Auto-save draft
       try {
-        const response = await dailyInspectionService.saveDraft(draftId, formData);
+        const response = await dailyInspectionService.saveDraft(draftId, { ...formData, draftStep: currentStep + 1 });
         setDraftId(response.data._id);
       } catch (error) {
         console.error('Error saving draft:', error);
@@ -219,11 +238,17 @@ const DailyInspection = () => {
   };
 
   const handleSaveDraft = async () => {
+    setSaveDraftModal(true);
+  };
+
+  const confirmSaveDraft = async () => {
     try {
       setLoading(true);
-      const response = await dailyInspectionService.saveDraft(draftId, formData);
+      const response = await dailyInspectionService.saveDraft(draftId, { ...formData, draftStep: currentStep });
       setDraftId(response.data._id);
-      fetchInspections();
+      setShowForm(false);
+      setSaveDraftModal(false);
+      await fetchInspections();
     } catch (error) {
       console.error('Error saving draft:', error);
     } finally {
@@ -247,6 +272,24 @@ const DailyInspection = () => {
         : ['No issues'];
 
       const normalizedStatus = loadedStatus.length > 0 ? loadedStatus : ['No issues'];
+      const savedStep = Number(draftInspection.draftStep);
+      const populatedSteps = [
+        draftInspection.externalAssets,
+        draftInspection.groundFloor,
+        draftInspection.firstFloor,
+        draftInspection.secondFloor
+      ];
+      const fallbackStep = populatedSteps.reduce(
+        (lastPopulatedStep, section, index) => (
+          Object.values(section || {}).some((value) => isFieldFilled(value))
+            ? index + 1
+            : lastPopulatedStep
+        ),
+        1
+      );
+      const resumeStep = Number.isInteger(savedStep) && savedStep >= 1 && savedStep <= 4
+        ? savedStep
+        : fallbackStep;
 
       setFormData((prev) => ({
         externalAssets: mergeSection(prev.externalAssets, draftInspection.externalAssets),
@@ -258,8 +301,8 @@ const DailyInspection = () => {
       }));
       setDraftId(draftInspection._id);
       setShowForm(true);
-      setCurrentStep(1);
-      window.scrollTo(0, 0);
+      setCurrentStep(resumeStep);
+      setShouldFocusDraftInput(true);
     } catch (error) {
       console.error('Error loading draft:', error);
     } finally {
@@ -1136,7 +1179,7 @@ const DailyInspection = () => {
               </div>
             </div>
 
-            <form className="form">
+            <form id="daily-inspection-form" className="form">
               {currentStep === 1 && (
                 <div>
                   <h2>External Assets</h2>
@@ -2506,6 +2549,7 @@ const DailyInspection = () => {
                   onClick={handleSaveDraft}
                   className="btn-save-draft"
                   title="Save your current progress as a draft to continue later"
+                  disabled={loading}
                 >
                   Save as Draft
                 </button>
@@ -2734,7 +2778,7 @@ const DailyInspection = () => {
                     <th>#</th>
                     <th>Inspection Date</th>
                     <th>Imported Date</th>
-                    <th>Status</th>
+                    <th>State</th>
                     <th>External Assets</th>
                     <th>Ground Floor</th>
                     <th>First Floor</th>
@@ -2903,6 +2947,18 @@ const DailyInspection = () => {
           itemName="Daily Inspection"
           onConfirm={confirmSubmit}
           onCancel={() => setSubmitModal(false)}
+          isLoading={loading}
+        />
+
+        <SubmitConfirmationModal
+          isOpen={saveDraftModal}
+          title="Save Daily Inspection Draft"
+          message="Save your current progress as a draft and return to submitted data?"
+          itemName="Daily Inspection Draft"
+          confirmLabel="Save Draft"
+          loadingLabel="Saving Draft..."
+          onConfirm={confirmSaveDraft}
+          onCancel={() => setSaveDraftModal(false)}
           isLoading={loading}
         />
 

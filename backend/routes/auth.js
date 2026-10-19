@@ -2,12 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const authController = require('../controllers/authController');
+const { authMiddleware } = require('../middleware/auth');
 
 // Current user
-router.get('/me', authController.getCurrentUser);
+router.get('/me', authMiddleware, authController.getCurrentUser);
 
 // Logout
-router.post('/logout', authController.logout);
+router.post('/logout', authMiddleware, authController.logout);
 
 // Register route
 router.post(

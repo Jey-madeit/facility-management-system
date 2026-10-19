@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const { validationResult } = require('express-validator');
+const { logAudit } = require('../utils/audit');
 
 // Create new user (admin only)
 exports.createUser = async (req, res) => {
@@ -26,6 +27,16 @@ exports.createUser = async (req, res) => {
     });
 
     await user.save();
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'created',
+      targetType: 'User',
+      targetId: user._id.toString(),
+      details: { username: user.username, role: user.role },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
 
     res.status(201).json({
       message: 'User created successfully',
@@ -78,6 +89,16 @@ exports.toggleLock = async (req, res) => {
     }
 
     await user.save();
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: user.isLocked ? 'locked' : 'unlocked',
+      targetType: 'User',
+      targetId: user._id.toString(),
+      details: { username: user.username },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
 
     res.json({
       message: user.isLocked ? 'User account locked' : 'User account unlocked',
@@ -140,6 +161,16 @@ exports.updateUser = async (req, res) => {
     if (role) user.role = role;
 
     await user.save();
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'updated',
+      targetType: 'User',
+      targetId: user._id.toString(),
+      details: { username: user.username, role: user.role },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
 
     res.json({
       message: 'User updated successfully',
@@ -173,6 +204,16 @@ exports.deleteUser = async (req, res) => {
     }
 
     await User.findByIdAndDelete(userId);
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'deleted',
+      targetType: 'User',
+      targetId: user._id.toString(),
+      details: { username: user.username },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
 
     res.json({
       message: 'User deleted successfully',
@@ -205,6 +246,16 @@ exports.resetPassword = async (req, res) => {
     // Update password (will be hashed by pre-save middleware)
     user.password = newPassword;
     await user.save();
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'password_reset',
+      targetType: 'User',
+      targetId: user._id.toString(),
+      details: { username: user.username },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
 
     res.json({
       message: 'Password reset successfully',
