@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Building2, Users, BoomBox, Rocket, Calendar, LogOut } from 'lucide-react';
+import { Building2, Users, BoomBox, Rocket, Calendar, LogOut, ClipboardList } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
 import '../styles/Home.css';
@@ -112,6 +112,16 @@ const Home = () => {
                 </h2>
                 <p>Manage system users and permissions</p>
               </div>
+              <div
+                className="section-card admin-card"
+                onClick={() => navigate('/logs')}
+              >
+                <h2>
+                  <ClipboardList size={20} style={{ marginRight: '8px', marginBottom: '4px', verticalAlign: 'middle' }} />
+                  Audit Logs
+                </h2>
+                <p>Review system activity and restore deleted records</p>
+              </div>
             </>
           )}
         </div>
@@ -128,6 +138,7 @@ const Home = () => {
               <>
                 {/*<button type="button" onClick={() => navigate('/dashboard')}>Operational Dashboard</button>*/}
                 <button type="button" onClick={() => navigate('/users')}>User Management</button>
+                <button type="button" onClick={() => navigate('/logs')}>Audit Logs</button>
               </>
             )}
           </div>

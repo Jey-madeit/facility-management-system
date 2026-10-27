@@ -765,7 +765,7 @@ const AvrSystems = () => {
         {!showForm && (
         <section className="avr-recordings-list">
           <div className="avr-list-heading">
-            <h2>Submitted Data</h2>
+            <h2>Submitted Recordings</h2>
             {isAdmin && (
               <label className="avr-import-label">
                 <span>Import Data</span>

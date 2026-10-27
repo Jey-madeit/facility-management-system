@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { AuthContext } from '../contexts/AuthContext';
 import { dailyInspectionService, userService } from '../services/apiService';
@@ -14,6 +14,8 @@ const DailyInspection = () => {
   const { user } = useContext(AuthContext);
   const [inspections, setInspections] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [formError, setFormError] = useState('');
   const [currentStep, setCurrentStep] = useState(1);
   const [draftId, setDraftId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -189,6 +191,8 @@ const DailyInspection = () => {
   };
 
   const handleStartForm = () => {
+    setEditingId(null);
+    setFormError('');
     setShowForm(true);
     setCurrentStep(1);
     setDraftId(null);
@@ -198,12 +202,13 @@ const DailyInspection = () => {
     if (!isCurrentStepComplete()) return;
 
     if (currentStep < 4) {
-      // Auto-save draft
-      try {
-        const response = await dailyInspectionService.saveDraft(draftId, { ...formData, draftStep: currentStep + 1 });
-        setDraftId(response.data._id);
-      } catch (error) {
-        console.error('Error saving draft:', error);
+      if (!editingId) {
+        try {
+          const response = await dailyInspectionService.saveDraft(draftId, { ...formData, draftStep: currentStep + 1 });
+          setDraftId(response.data._id);
+        } catch (error) {
+          console.error('Error saving draft:', error);
+        }
       }
       setCurrentStep(currentStep + 1);
     }
@@ -219,19 +224,25 @@ const DailyInspection = () => {
 
   const handleSubmit = async () => {
     if (!isCurrentStepComplete()) return;
+    setFormError('');
     setSubmitModal(true);
   };
 
   const confirmSubmit = async () => {
     try {
       setLoading(true);
-      await dailyInspectionService.submit(formData, draftId);
+      if (editingId) {
+        await dailyInspectionService.update(editingId, formData);
+      } else {
+        await dailyInspectionService.submit(formData, draftId);
+      }
       resetForm();
       setDraftId(null);
       setSubmitModal(false);
       fetchInspections();
     } catch (error) {
-      console.error('Error submitting inspection:', error);
+      setFormError(error.response?.data?.message || `Failed to ${editingId ? 'update' : 'submit'} daily inspection.`);
+      setSubmitModal(false);
     } finally {
       setLoading(false);
     }
@@ -264,6 +275,7 @@ const DailyInspection = () => {
   const handleLoadDraft = async (draftInspection) => {
     try {
       setLoading(true);
+      setEditingId(null);
       // Load the draft data into the form
       const loadedStatus = Array.isArray(draftInspection.status)
         ? draftInspection.status.filter((item) => item !== 'Draft')
@@ -308,6 +320,28 @@ const DailyInspection = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditInspection = (inspection) => {
+    const loadedStatus = Array.isArray(inspection.status)
+      ? inspection.status.filter((item) => item !== 'Draft')
+      : typeof inspection.status === 'string' && inspection.status
+        ? [inspection.status]
+        : ['No issues'];
+
+    setFormData((current) => ({
+      externalAssets: mergeSection(current.externalAssets, inspection.externalAssets),
+      groundFloor: mergeSection(current.groundFloor, inspection.groundFloor),
+      firstFloor: mergeSection(current.firstFloor, inspection.firstFloor),
+      secondFloor: mergeSection(current.secondFloor, inspection.secondFloor),
+      status: loadedStatus.length > 0 ? loadedStatus : ['No issues'],
+      inspectionDate: inspection.inspectionDate ? String(inspection.inspectionDate).slice(0, 10) : ''
+    }));
+    setEditingId(inspection._id);
+    setDraftId(null);
+    setFormError('');
+    setCurrentStep(1);
+    setShowForm(true);
   };
 
   const generateReport = async () => {
@@ -812,6 +846,8 @@ const DailyInspection = () => {
 
 
   const resetForm = () => {
+    setEditingId(null);
+    setFormError('');
     setFormData({
       externalAssets: {
         cumminsGeneratorAvailability: '',
@@ -1160,6 +1196,7 @@ const DailyInspection = () => {
 
         {showForm && (
           <div className="form-container">
+            {formError && <div className="form-error" role="alert">{formError}</div>}
             <div className="step-indicator">
               <div className={`step ${currentStep >= 1 ? 'active' : ''}`}>
                 <span>1</span>
@@ -2540,7 +2577,7 @@ const DailyInspection = () => {
                     className="btn-submit"
                     disabled={!isCurrentStepComplete()}
                   >
-                    Submit All
+                    {editingId ? 'Save Changes' : 'Submit All'}
                   </button>
                 )}
 
@@ -2549,7 +2586,7 @@ const DailyInspection = () => {
                   onClick={handleSaveDraft}
                   className="btn-save-draft"
                   title="Save your current progress as a draft to continue later"
-                  disabled={loading}
+                  disabled={loading || Boolean(editingId)}
                 >
                   Save as Draft
                 </button>
@@ -2860,11 +2897,22 @@ const DailyInspection = () => {
                           {inspection.userId?.username} 
                         </td>}
                         <td>
+                          {!inspection.status?.includes('Draft') && user?.role === 'admin' && (
+                            <button
+                              type="button"
+                              onClick={() => handleEditInspection(inspection)}
+                              className="edit-btn"
+                              title="Edit this submitted inspection"
+                            >
+                              Edit <Pencil size={16} style={{ verticalAlign: 'middle' }} />
+                            </button>
+                          )}
                           {user?.role === 'admin' && (
                             <button
-                            onClick={() => handleDeleteInspection(inspection._id, `Inspection - ${new Date(inspection.inspectionDate).toLocaleDateString()}`)}
-                            className="delete-btn"
-                            title="Delete this inspection"
+                              type="button"
+                              onClick={() => handleDeleteInspection(inspection._id, `Inspection - ${new Date(inspection.inspectionDate).toLocaleDateString()}`)}
+                              className="delete-btn"
+                              title="Delete this inspection"
                             >
                               Delete <Trash2 size={16} style={{verticalAlign: 'middle'}} />
                             </button>
@@ -2942,9 +2990,11 @@ const DailyInspection = () => {
         {/* Submit Confirmation Modal */}
         <SubmitConfirmationModal
           isOpen={submitModal}
-          title="Submit Daily Inspection"
-          message="Are you sure you want to submit this daily inspection? Once submitted, it will be added to the database."
+          title={editingId ? 'Update Daily Inspection' : 'Submit Daily Inspection'}
+          message={editingId ? 'Save the changes to this submitted daily inspection?' : 'Are you sure you want to submit this daily inspection? Once submitted, it will be added to the database.'}
           itemName="Daily Inspection"
+          confirmLabel={editingId ? 'Confirm Update' : 'Confirm Submit'}
+          loadingLabel={editingId ? 'Updating...' : 'Submitting...'}
           onConfirm={confirmSubmit}
           onCancel={() => setSubmitModal(false)}
           isLoading={loading}

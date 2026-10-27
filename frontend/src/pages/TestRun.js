@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { AuthContext } from '../contexts/AuthContext';
 import { testRunService, userService } from '../services/apiService';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
@@ -12,6 +12,8 @@ const TestRun = () => {
   const { user } = useContext(AuthContext);
   const [testRuns, setTestRuns] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [formError, setFormError] = useState('');
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null, name: '' });
@@ -95,13 +97,43 @@ const TestRun = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
     setSubmitModal(true);
+  };
+
+  const startEditing = (testRun) => {
+    setEditingId(testRun._id);
+    setFormError('');
+    setFormData({
+      testDate: testRun.testDate ? String(testRun.testDate).slice(0, 10) : '',
+      testTime: testRun.testTime || '',
+      stopTime: testRun.stopTime || '',
+      generatorSet: testRun.generatorSet || '',
+      status: testRun.status || '',
+      hourRun: testRun.hourRun ?? '',
+      engineTemperature: testRun.engineTemperature ?? '',
+      oilPressure: testRun.oilPressure ?? '',
+      llVoltage: testRun.llVoltage ?? '',
+      lnVoltage: testRun.lnVoltage ?? '',
+      loadCurrent: testRun.loadCurrent ?? '',
+      engineSpeed: testRun.engineSpeed ?? '',
+      engineFrequency: testRun.engineFrequency ?? '',
+      realPower: testRun.realPower ?? '',
+      apparentPower: testRun.apparentPower ?? '',
+      batteryVoltage: testRun.batteryVoltage ?? '',
+      comments: testRun.comments || ''
+    });
+    setShowForm(true);
   };
 
   const confirmSubmit = async () => {
     try {
       setLoading(true);
-      await testRunService.create(formData);
+      if (editingId) {
+        await testRunService.update(editingId, formData);
+      } else {
+        await testRunService.create(formData);
+      }
       setFormData({
         testDate: new Date().toISOString().split('T')[0],
         testTime: '',
@@ -122,10 +154,13 @@ const TestRun = () => {
         comments: ''
       });
       setShowForm(false);
+      setEditingId(null);
+      setFormError('');
       setSubmitModal(false);
       fetchTestRuns();
     } catch (error) {
-      console.error('Error creating test run:', error);
+      setFormError(error.response?.data?.message || `Failed to ${editingId ? 'update' : 'create'} test run.`);
+      setSubmitModal(false);
     } finally {
       setLoading(false);
     }
@@ -192,6 +227,8 @@ const TestRun = () => {
   };
 
   const resetForm = () => {
+    setEditingId(null);
+    setFormError('');
     setFormData({
       testDate: new Date().toISOString().split('T')[0],
       testTime: '',
@@ -213,6 +250,15 @@ const TestRun = () => {
     })
     setShowForm(true);
   }
+
+  const toggleForm = () => {
+    if (showForm && editingId) {
+      resetForm();
+      setShowForm(false);
+      return;
+    }
+    setShowForm(!showForm);
+  };
 
   const handleDelete = (id, itemName) => {
     setDeleteModal({ isOpen: true, id, name: itemName });
@@ -520,7 +566,7 @@ const TestRun = () => {
       <NavBar heading="Generator Test Run" />
       
       <button 
-        onClick={() => setShowForm(!showForm)} 
+        onClick={toggleForm}
         className="add-btn"
       >
         {showForm ? 'Submitted Data' : 'Add New Data'}
@@ -566,7 +612,8 @@ const TestRun = () => {
     
       {showForm && (
         <form onSubmit={handleSubmit} className="form">
-          <h3>Generator Test Parameters</h3>
+          {formError && <div className="form-error" role="alert">{formError}</div>}
+          <h3>{editingId ? 'Edit Submitted Test Run' : 'Generator Test Parameters'}</h3>
           <div className='form-grid'>
             <div className="form-group">
               <label htmlFor='date'>Test Date:</label>
@@ -1065,7 +1112,11 @@ const TestRun = () => {
                 </dl>
                 {user?.role === 'admin' && (
                   <div className="test-run-card-actions">
+                    <button type="button" onClick={() => startEditing(testRun)} className="edit-btn" title="Edit this test run">
+                      Edit <Pencil size={16} />
+                    </button>
                     <button
+                      type="button"
                       onClick={() => handleDelete(testRun._id, `${testRun.generatorSet} - ${new Date(testRun.createdAt).toLocaleDateString()}`)}
                       className="delete-btn"
                       title="Delete this test run"
@@ -1074,6 +1125,13 @@ const TestRun = () => {
                     </button>
                   </div>
                 )}
+                {/*{user?.role !== 'admin' && (
+                  <div className="test-run-card-actions">
+                    <button type="button" onClick={() => startEditing(testRun)} className="edit-btn" title="Edit this test run">
+                      Edit <Pencil size={16} />
+                    </button>
+                  </div>
+                )}*/}
               </article>
               ))}
             </div>
@@ -1095,9 +1153,11 @@ const TestRun = () => {
       {/* Submit Confirmation Modal */}
       <SubmitConfirmationModal
         isOpen={submitModal}
-        title="Submit Test Run"
-        message="Are you sure you want to submit this test run? Once submitted, it will be added to the database."
+        title={editingId ? 'Update Test Run' : 'Submit Test Run'}
+        message={editingId ? 'Save the changes to this submitted test run?' : 'Are you sure you want to submit this test run? Once submitted, it will be added to the database.'}
         itemName="Generator Test Run"
+        confirmLabel={editingId ? 'Confirm Update' : 'Confirm Submit'}
+        loadingLabel={editingId ? 'Updating...' : 'Submitting...'}
         onConfirm={confirmSubmit}
         onCancel={() => setSubmitModal(false)}
         isLoading={loading}

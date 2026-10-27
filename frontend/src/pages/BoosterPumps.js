@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { AuthContext } from '../contexts/AuthContext';
 import { boosterPumpService, userService } from '../services/apiService';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
@@ -14,6 +14,8 @@ const BoosterPumps = () => {
   const [pumps, setPumps] = useState([]);
   const [users, setUsers] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState(null);
   const [importPreview, setImportPreview] = useState({ rows: [], fileName: '' });
@@ -90,7 +92,26 @@ const BoosterPumps = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
     setSubmitModal(true);
+  };
+
+  const startEditing = (pump) => {
+    setEditingId(pump._id);
+    setFormError('');
+    setFormData({
+      startDate: pump.startDate ? String(pump.startDate).slice(0, 10) : '',
+      pumpNo: pump.pumpNo || '',
+      horsepower: '',
+      startTime: pump.startTime || '',
+      status: String(pump.status || '').toLowerCase(),
+      stopDate: pump.stopDate ? String(pump.stopDate).slice(0, 10) : '',
+      stopTime: pump.stopTime || '',
+      failureAlarm: pump.failureAlarm || '',
+      totalHours: pump.totalHours || '',
+      comments: pump.comments || ''
+    });
+    setShowForm(true);
   };
 
   const handleBoosterPumpStatusChange = (value) => {
@@ -113,7 +134,11 @@ const BoosterPumps = () => {
         ...formData,
         totalHours: calculateTotalHours()
       }
-      await boosterPumpService.create(entry);
+      if (editingId) {
+        await boosterPumpService.update(editingId, entry);
+      } else {
+        await boosterPumpService.create(entry);
+      }
       setFormData({
         startDate: new Date().toISOString().split('T')[0],
         pumpNo: '',
@@ -126,10 +151,13 @@ const BoosterPumps = () => {
         comments: ''
       });
       setShowForm(false);
+      setEditingId(null);
+      setFormError('');
       setSubmitModal(false);
       fetchPumps();
     } catch (error) {
-      console.error('Error creating pump:', error);
+      setFormError(error.response?.data?.message || `Failed to ${editingId ? 'update' : 'create'} pump entry.`);
+      setSubmitModal(false);
     } finally {
       setLoading(false);
     }
@@ -505,6 +533,8 @@ const BoosterPumps = () => {
   };
 
   const resetForm = () => {
+    setEditingId(null);
+    setFormError('');
     setFormData({
       startDate: new Date().toISOString().split('T')[0],
       pumpNo: '',
@@ -518,6 +548,15 @@ const BoosterPumps = () => {
     })
     setShowForm(true);
   }
+
+  const toggleForm = () => {
+    if (showForm && editingId) {
+      resetForm();
+      setShowForm(false);
+      return;
+    }
+    setShowForm(!showForm);
+  };
 
   const calculateTotalHours = (data = formData) => {
     const { startDate, startTime, stopDate, stopTime } = data;
@@ -541,7 +580,7 @@ const BoosterPumps = () => {
       <div className="booster-container">
         
         <button 
-          onClick={() => setShowForm(!showForm)} 
+          onClick={toggleForm}
           className="add-btn"
         >
           {showForm ? 'Submitted Data' : 'Add New Data'}
@@ -583,6 +622,7 @@ const BoosterPumps = () => {
 
         {showForm && (
           <form onSubmit={handleSubmit} className="form">
+            {formError && <div className="form-error" role="alert">{formError}</div>}
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor='date'>Start Date:</label>
@@ -691,7 +731,9 @@ const BoosterPumps = () => {
               />
             </div>
 
-            <button type="submit" className="submit-btn" disabled={!isFormComplete()}>Submit</button>
+            <button type="submit" className="submit-btn" disabled={!isFormComplete()}>
+              {editingId ? 'Update' : 'Submit'}
+            </button>
           </form>
         )}
 
@@ -949,16 +991,26 @@ const BoosterPumps = () => {
                         {pump.userId?.username}
                       </td>}
                       {user?.role === 'admin' && (
-                        <td>
+                      <td>
+                        <button
+                          type="button"
+                          onClick={() => startEditing(pump)}
+                          className="edit-btn"
+                          title="Edit this pump entry"
+                        >
+                          Edit <Pencil size={16} style={{ verticalAlign: 'middle' }} />
+                        </button>
+                        
                           <button 
+                            type="button"
                             onClick={() => handleDelete(pump._id, `Pump ${pump.pumpNo} - ${new Date(pump.createdAt).toLocaleDateString()}`)}
                             className="delete-btn"
                             title="Delete this pump entry"
                           >
                             Delete <Trash2 size={16} style={{verticalAlign: 'middle'}} />
                           </button>
-                        </td>)
-                      }
+                      </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -981,9 +1033,11 @@ const BoosterPumps = () => {
         {/* Submit Confirmation Modal */}
         <SubmitConfirmationModal
           isOpen={submitModal}
-          title="Submit Pump Entry"
-          message="Are you sure you want to submit this pump entry? Once submitted, it will be added to the database."
+          title={editingId ? 'Update Pump Entry' : 'Submit Pump Entry'}
+          message={editingId ? 'Save the changes to this submitted pump entry?' : 'Are you sure you want to submit this pump entry? Once submitted, it will be added to the database.'}
           itemName="Booster Pump Alternation"
+          confirmLabel={editingId ? 'Confirm Update' : 'Confirm Submit'}
+          loadingLabel={editingId ? 'Updating...' : 'Submitting...'}
           onConfirm={confirmSubmit}
           onCancel={() => setSubmitModal(false)}
           isLoading={loading}

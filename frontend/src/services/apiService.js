@@ -119,6 +119,7 @@ export const dailyInspectionService = {
   getAll: () => apiClient.get('/dailyinspections'),
   getById: (id) => apiClient.get(`/dailyinspections/${id}`),
   submit: (data, draftId) => apiClient.post('/dailyinspections/submit', { ...data, draftId }),
+  update: (id, data) => apiClient.put(`/dailyinspections/${id}`, data),
   saveDraft: (id, data) => apiClient.post(`/dailyinspections/draft/${id || 'null'}`, data),
   delete: (id) => apiClient.delete(`/dailyinspections/${id}`),
   import: (rows, assignedUserId) => apiClient.post('/dailyinspections/import', { rows, assignedUserId }),

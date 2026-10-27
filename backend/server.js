@@ -1,4 +1,14 @@
+const dns = require('dns');
 require('dotenv').config();
+
+const dnsServers = (process.env.DNS_SERVERS || '')
+  .split(',')
+  .map((server) => server.trim())
+  .filter(Boolean);
+
+if (dnsServers.length > 0) {
+  dns.setServers(dnsServers);
+}
 
 const app = require('./app');
 const connectDB = require('./config/db');

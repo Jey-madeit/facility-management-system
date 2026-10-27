@@ -263,6 +263,30 @@ table tr:hover {
   font-size: 12px;
 }
 
+.edit-btn {
+  background-color: #2563eb;
+  color: #fff;
+  padding: 8px 16px;
+  width: auto;
+  margin-right: 6px;
+  border: 1px solid #2563eb;
+  border-radius: 5px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.edit-btn:hover {
+  background-color: #1d4ed8;
+}
+
+.form-error {
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
 .delete-btn:hover {
   background: rgba(235, 57, 57, 0.408);
   color: red;

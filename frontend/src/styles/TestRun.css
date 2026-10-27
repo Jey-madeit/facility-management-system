@@ -258,6 +258,7 @@
 .test-run-card-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   margin-top: 16px;
   padding-top: 12px;
   border-top: 1px solid #e9ecef;
@@ -267,6 +268,34 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.test-run-card-actions .edit-btn,
+.edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+  padding: 8px 16px;
+  border: 1px solid #2563eb;
+  border-radius: 5px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.edit-btn:hover {
+  background: #1d4ed8;
+}
+
+.form-error {
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .test-run-select-all {

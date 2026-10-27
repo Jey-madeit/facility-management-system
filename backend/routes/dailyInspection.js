@@ -27,6 +27,9 @@ router.get('/report/generate', authMiddleware, adminMiddleware, dailyInspectionC
 // Get all daily inspections
 router.get('/', authMiddleware, dailyInspectionController.getDailyInspections);
 
+// Update an existing daily inspection
+router.put('/:id', authMiddleware, dailyInspectionController.updateDailyInspection);
+
 // Get single daily inspection
 router.get('/:id', authMiddleware, dailyInspectionController.getDailyInspectionById);
 

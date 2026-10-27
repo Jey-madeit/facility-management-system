@@ -54,16 +54,20 @@ test('buildDashboardSummary aggregates records and statuses', () => {
     totalTestRuns: 10,
     totalPumps: 8,
     totalInspections: 6,
+    totalAvrRecordings: 4,
     testRunsByStatus: { Operational: 5, Maintenance: 2, Faulty: 3 },
     pumpsByStatus: { Operational: 5, Offline: 2, Maintenance: 1 },
     inspectionsByStatus: { 'No issues': 4, Draft: 1, 'Needs attention': 1 },
+    avrByStatus: { 'Alarm reported': 1, 'No alarm': 2, 'Not specified': 1 },
     recentUsers: [{ username: 'admin' }, { username: 'user1' }],
   });
 
-  assert.equal(summary.totalRecords, 24);
+  assert.equal(summary.totalRecords, 28);
+  assert.equal(summary.totalAvrRecordings, 4);
   assert.equal(summary.testRunStatusCounts.Operational, 5);
   assert.equal(summary.pumpStatusCounts.Offline, 2);
   assert.equal(summary.inspectionStatusCounts['No issues'], 4);
+  assert.equal(summary.avrStatusCounts['Alarm reported'], 1);
   assert.equal(summary.recentUsers.length, 2);
 });
 

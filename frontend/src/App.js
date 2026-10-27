@@ -10,6 +10,7 @@ import BoosterPumps from './pages/BoosterPumps';
 import DailyInspection from './pages/DailyInspection';
 import UserManagement from './pages/UserManagement';
 import Dashboard from './pages/Dashboard';
+import Logs from './pages/Logs';
 import AvrSystems from './pages/AvrSystems';
 import './App.css';
 
@@ -70,6 +71,14 @@ function AppContent() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/logs"
+        element={
+          <ProtectedRoute>
+            <Logs />
           </ProtectedRoute>
         }
       />

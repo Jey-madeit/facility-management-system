@@ -98,6 +98,57 @@ exports.submitDailyInspection = async (req, res) => {
   }
 };
 
+exports.updateDailyInspection = async (req, res) => {
+  try {
+    const inspection = await DailyInspection.findById(req.params.id);
+    if (!inspection) {
+      return res.status(404).json({ message: 'Daily inspection not found' });
+    }
+
+    if (req.user.role !== 'admin' && inspection.userId.toString() !== req.user.userId) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    const { externalAssets, groundFloor, firstFloor, secondFloor, status, inspectionDate } = req.body;
+    const normalizedStatus = Array.isArray(status)
+      ? status.filter((item) => item !== 'Draft')
+      : [];
+    const inspectionData = {
+      externalAssets: externalAssets ?? inspection.externalAssets,
+      groundFloor: groundFloor ?? inspection.groundFloor,
+      firstFloor: firstFloor ?? inspection.firstFloor,
+      secondFloor: secondFloor ?? inspection.secondFloor,
+      status: status === undefined
+        ? inspection.status
+        : normalizedStatus.length > 0
+          ? normalizedStatus
+          : ['No issues'],
+      inspectionDate: inspectionDate || inspection.inspectionDate,
+    };
+
+    const validation = validateInspectionPayload(inspectionData, req.user.userId);
+    if (!validation.valid) {
+      return res.status(400).json({ message: validation.errors.join('; ') });
+    }
+
+    Object.assign(inspection, inspectionData);
+    await inspection.save();
+    await logAudit({
+      actorId: req.user.userId,
+      actorName: req.user.username,
+      action: 'updated',
+      targetType: 'DailyInspection',
+      targetId: inspection._id.toString(),
+      details: { status: inspection.status },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+    res.json(inspection);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Save draft daily inspection
 exports.saveDraftInspection = async (req, res) => {
   try {
